@@ -27,3 +27,8 @@ bld/
 [Ll]ogs/
 # Add this line
 out/
+
+# CLion build directories
+cmake-build-*/
+
+
