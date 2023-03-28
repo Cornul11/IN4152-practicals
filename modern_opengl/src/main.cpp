@@ -421,7 +421,7 @@ int main(int argc, char** argv)
                         lambertShader.bind();
                         // === SET YOUR LAMBERT UNIFORMS HERE ===
                         // Values that you may want to pass to the shader include light.position, light.color and shadingData.kd.
-                        //glUniform1f(uniformIndex, 1, floatValue);
+                        glUniform3fv(1, 1, glm::value_ptr(shadingData.kd));
                         //glUniform3fv(uniformIndex, 1, glm::value_ptr(glmVector));
                         render();
                     }
