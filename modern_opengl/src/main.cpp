@@ -433,6 +433,11 @@ int main(int argc, char** argv)
 
                             // === SET YOUR PHONG/BLINN PHONG UNIFORMS HERE ===
                             // Values that you may want to pass to the shader are stored in light, shadingData and cameraPos.
+                            glUniform3fv(1, 1, glm::value_ptr(shadingData.ks));
+                            glUniform3fv(2, 1, glm::value_ptr(cameraPos));
+                            glUniform3fv(3, 1, glm::value_ptr(light.position));
+                            glUniform1f(4, shadingData.shininess);
+
                         render();
                     }
                 }
