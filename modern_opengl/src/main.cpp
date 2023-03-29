@@ -395,9 +395,14 @@ int main(int argc, char** argv)
 
                         // === SET YOUR X-TOON UNIFORMS HERE ===
                         // Values that you may want to pass to the shader are stored in light, shadingData and cameraPos and texToon.
+                        glUniform3fv(1, 1, glm::value_ptr(shadingData.ks));
+                        glUniform3fv(2, 1, glm::value_ptr(cameraPos));
+                        glUniform3fv(3, 1, glm::value_ptr(light.position));
+                        glUniform1f(4, shadingData.shininess);
+
                         glActiveTexture(GL_TEXTURE0);
                         glBindTexture(GL_TEXTURE_2D, texToon);
-                        glUniform1i(2, 0); // Change 2 to the uniform index that you want to use.
+                        glUniform1i(5, 0); // Change 2 to the uniform index that you want to use.
                         render();
                     } else {
                         if (toonLightingDiffuse) {

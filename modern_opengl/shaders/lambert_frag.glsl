@@ -6,7 +6,7 @@ layout (location = 2) uniform vec3 lightPos;
 layout (location = 3) uniform vec3 lightColor;
 
 // Output for on-screen color
-layout(location = 0) out vec4 outColor;
+layout (location = 0) out vec4 outColor;
 
 // Interpolated output data from vertex shader
 in vec3 fragPos; // World-space position

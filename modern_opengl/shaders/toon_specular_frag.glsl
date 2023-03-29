@@ -11,7 +11,7 @@ layout (location = 7) uniform vec3 lightColor;
 layout (location = 8) uniform vec3 cameraPos;
 
 // Output for on-screen color
-layout(location = 0) out vec4 outColor;
+layout (location = 0) out vec4 outColor;
 
 // Interpolated output data from vertex shader
 in vec3 fragPos; // World-space position
@@ -28,7 +28,7 @@ void main()
 
     // specularExponent * 5 because Blinn-Phong needs a higher value to achieve a similar specular effect
     float specular = pow(max(dot(N, H), 0.0), specularExponent * 5);
-    vec3 finalColor = vec3(1) * round(specular);// full white or black
-    // Output the normal as color
+    vec3 finalColor = vec3(1) * round(specular); // full white or black
+
     outColor = vec4(Ks * finalColor * lightColor, 1.0);
 }
