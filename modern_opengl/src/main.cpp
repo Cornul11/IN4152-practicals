@@ -405,6 +405,11 @@ int main(int argc, char** argv)
 
                             // === SET YOUR DIFFUSE TOON UNIFORMS HERE ===
                             // Values that you may want to pass to the shader are stored in light, shadingData.
+                            glUniform1i(1, shadingData.toonDiscretize);
+                            glUniform1f(2, shadingData.toonSpecularThreshold);
+                            glUniform3fv(3, 1, glm::value_ptr(shadingData.kd));
+                            glUniform3fv(4, 1, glm::value_ptr(light.position));
+                            glUniform3fv(5, 1, glm::value_ptr(light.color));
                             render();
                         }
                         if (toonLightingSpecular) {
@@ -412,6 +417,14 @@ int main(int argc, char** argv)
 
                             // === SET YOUR SPECULAR TOON UNIFORMS HERE ===
                             // Values that you may want to pass to the shader are stored in light, shadingData and cameraPos.
+                            glUniform1i(1, shadingData.toonDiscretize);
+                            glUniform1f(2, shadingData.toonSpecularThreshold);
+                            glUniform1f(3, shadingData.shininess);
+                            glUniform3fv(4, 1, glm::value_ptr(shadingData.kd));
+                            glUniform3fv(5, 1, glm::value_ptr(shadingData.ks));
+                            glUniform3fv(6, 1, glm::value_ptr(light.position));
+                            glUniform3fv(7, 1, glm::value_ptr(light.color));
+                            glUniform3fv(8, 1, glm::value_ptr(cameraPos));
                             render();
                         }
                     }
@@ -422,7 +435,8 @@ int main(int argc, char** argv)
                         // === SET YOUR LAMBERT UNIFORMS HERE ===
                         // Values that you may want to pass to the shader include light.position, light.color and shadingData.kd.
                         glUniform3fv(1, 1, glm::value_ptr(shadingData.kd));
-                        //glUniform3fv(uniformIndex, 1, glm::value_ptr(glmVector));
+                        glUniform3fv(2, 1, glm::value_ptr(light.position));
+                        glUniform3fv(3, 1, glm::value_ptr(light.color));
                         render();
                     }
                     if (phongSpecularLighting || blinnPhongSpecularLighting) {
