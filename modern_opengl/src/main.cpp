@@ -1,6 +1,7 @@
 // Disable compiler warnings in third-party code (which we cannot change).
 #include <framework/disable_all_warnings.h>
 #include <framework/opengl_includes.h>
+
 DISABLE_WARNINGS_PUSH()
 // Include glad before glfw3
 #include <GLFW/glfw3.h>
@@ -12,7 +13,9 @@ DISABLE_WARNINGS_PUSH()
 #include <glm/vec4.hpp>
 //#define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
+
 DISABLE_WARNINGS_POP()
+
 #include <algorithm>
 #include <cassert>
 #include <cstdlib> // EXIT_FAILURE
@@ -43,25 +46,24 @@ enum class LightPlacementValue {
     Shadow = 1,
     Specular = 2
 };
-LightPlacementValue interfaceLightPlacement { LightPlacementValue::Sphere };
+LightPlacementValue interfaceLightPlacement{LightPlacementValue::Sphere};
 
 struct Light {
     glm::vec3 position;
     glm::vec3 color;
 };
-std::vector lights { Light { glm::vec3(0, 0, 3), glm::vec3(1) } };
+std::vector lights{Light{glm::vec3(0, 0, 3), glm::vec3(1)}};
 size_t selectedLight = 0;
 
-static glm::vec3 userInteractionSphere(const glm::vec3& selectedPos, const glm::vec3& camPos)
-{
+static glm::vec3 userInteractionSphere(const glm::vec3 &selectedPos, const glm::vec3 &camPos) {
     //RETURN the new light position, defined as follows.
     //selectedPos is a location on the mesh. Use this location to place the light source to cover the location as seen from camPos.
     //Further, the light should be at a distance of 1.5 from the origin of the scene - in other words, located on a sphere of radius 1.5 around the origin.
     return glm::vec3(1, 1, 1);
 }
 
-static glm::vec3 userInteractionShadow(const glm::vec3& selectedPos, const glm::vec3& selectedNormal, const glm::vec3& lightPos)
-{
+static glm::vec3
+userInteractionShadow(const glm::vec3 &selectedPos, const glm::vec3 &selectedNormal, const glm::vec3 &lightPos) {
     //RETURN the new light position such that the light towards the selectedPos is orthgonal to the normal at that location
     //--- in this way, the shading boundary will be exactly at this location.
     //there are several ways to do this, choose one you deem appropriate given the current light position
@@ -69,8 +71,9 @@ static glm::vec3 userInteractionShadow(const glm::vec3& selectedPos, const glm::
     return glm::vec3(1, 0, 1);
 }
 
-static glm::vec3 userInteractionSpecular(const glm::vec3& selectedPos, const glm::vec3& selectedNormal, const glm::vec3& lightPos, const glm::vec3& cameraPos)
-{
+static glm::vec3
+userInteractionSpecular(const glm::vec3 &selectedPos, const glm::vec3 &selectedNormal, const glm::vec3 &lightPos,
+                        const glm::vec3 &cameraPos) {
     //RETURN the new light position such that a specularity (highlight) will be located at selectedPos, when viewed from cameraPos and lit from ligthPos.
     //please ensure also that the light is at a distance of 1 from selectedPos! If the camera is on the wrong side of the surface (normal pointing the other way),
     //then just return the original light position.
@@ -78,25 +81,27 @@ static glm::vec3 userInteractionSpecular(const glm::vec3& selectedPos, const glm
     return glm::vec3(0, 1, 1);
 }
 
-static size_t getClosestVertexIndex(const Mesh& mesh, const glm::vec3& pos);
-static std::optional<glm::vec3> getWorldPositionOfPixel(const Trackball&, const glm::vec2& pixel);
-static void userInteraction(const glm::vec3& cameraPos, const glm::vec3& selectedPos, const glm::vec3& selectedNormal);
+static size_t getClosestVertexIndex(const Mesh &mesh, const glm::vec3 &pos);
+
+static std::optional<glm::vec3> getWorldPositionOfPixel(const Trackball &, const glm::vec2 &pixel);
+
+static void userInteraction(const glm::vec3 &cameraPos, const glm::vec3 &selectedPos, const glm::vec3 &selectedNormal);
+
 static void printHelp();
 
 // Program entry point. Everything starts here.
-int main(int argc, char** argv)
-{
+int main(int argc, char **argv) {
     printHelp();
 
-    Window window { "Shading", glm::ivec2(WIDTH, HEIGHT), OpenGLVersion::GL45 };
-    Trackball trackball { &window, glm::radians(50.0f) };
+    Window window{"Shading", glm::ivec2(WIDTH, HEIGHT), OpenGLVersion::GL45};
+    Trackball trackball{&window, glm::radians(50.0f)};
 
     const Mesh mesh = loadMesh(argc == 2 ? argv[1] : "resources/dragon.obj")[0];
     struct {
         // Diffuse (Lambert)
-        glm::vec3 kd { 0.5f };
+        glm::vec3 kd{0.5f};
         // Specular (Phong/Blinn Phong)
-        glm::vec3 ks { 0.5f };
+        glm::vec3 ks{0.5f};
         float shininess = 3.0f;
         // Toon
         int toonDiscretize = 4;
@@ -110,119 +115,120 @@ int main(int argc, char** argv)
         const bool shiftPressed = window.isKeyPressed(GLFW_KEY_LEFT_SHIFT) || window.isKeyPressed(GLFW_KEY_RIGHT_SHIFT);
 
         switch (key) {
-        case GLFW_KEY_0: {
-            debug = !debug;
-            break;
-        }
-        case GLFW_KEY_1: {
-            diffuseLighting = !diffuseLighting;
-            break;
-        }
-        case GLFW_KEY_2: {
-            phongSpecularLighting = !phongSpecularLighting;
-            break;
-        }
-        case GLFW_KEY_3: {
-            blinnPhongSpecularLighting = !blinnPhongSpecularLighting;
-            break;
-        }
-        case GLFW_KEY_4: {
-            toonLightingDiffuse = !toonLightingDiffuse;
-            break;
-        }
-        case GLFW_KEY_5: {
-            toonLightingSpecular = !toonLightingSpecular;
-            if (toonLightingSpecular)
-                toonLightingDiffuse = true;
-            break;
-        }
-        case GLFW_KEY_6: {
-            toonxLighting = !toonxLighting;
-            break;
-        }
-        case GLFW_KEY_7: {
-            std::cout << "Number keys from 7 on not used." << std::endl;
-            return;
-        }
-        case GLFW_KEY_M: {
-            interfaceLightPlacement = static_cast<LightPlacementValue>((static_cast<int>(interfaceLightPlacement) + 1) % 3);
-            break;
-        }
-        case GLFW_KEY_L: {
-            if (shiftPressed)
-                lights.push_back(Light { trackball.position(), glm::vec3(1) });
-            else
-                lights[selectedLight].position = trackball.position();
-            return;
-        }
-        case GLFW_KEY_MINUS: {
-            if (selectedLight == 0)
-                selectedLight = lights.size() - 1;
-            else
-                --selectedLight;
-            return;
-        }
-        case GLFW_KEY_EQUAL: {
-            if (shiftPressed) // '+' pressed (unless you use a weird keyboard layout).
-                selectedLight = (selectedLight + 1) % lights.size();
-            return;
-        }
-        case GLFW_KEY_N: {
-            lights.clear();
-            lights.push_back(Light { glm::vec3(0, 0, 3), glm::vec3(1) });
-            selectedLight = 0;
-            return;
-        }
-        case GLFW_KEY_SPACE: {
-            const auto optWorldPoint = getWorldPositionOfPixel(trackball, window.getCursorPixel());
-            if (optWorldPoint) {
-                //std::cout << "World point: (" << optWorldPoint->x << ", " << optWorldPoint->y << ", " << optWorldPoint->z << ")" << std::endl;
-                //lights[selectedLight].position = worldPoint;
-                const size_t selectedVertexIdx = getClosestVertexIndex(mesh, *optWorldPoint);
-                if (selectedVertexIdx != 0xFFFFFFFF) {
-                    const Vertex& selectedVertex = mesh.vertices[selectedVertexIdx];
-                    userInteraction(trackball.position(), selectedVertex.position, selectedVertex.normal);
+            case GLFW_KEY_0: {
+                debug = !debug;
+                break;
+            }
+            case GLFW_KEY_1: {
+                diffuseLighting = !diffuseLighting;
+                break;
+            }
+            case GLFW_KEY_2: {
+                phongSpecularLighting = !phongSpecularLighting;
+                break;
+            }
+            case GLFW_KEY_3: {
+                blinnPhongSpecularLighting = !blinnPhongSpecularLighting;
+                break;
+            }
+            case GLFW_KEY_4: {
+                toonLightingDiffuse = !toonLightingDiffuse;
+                break;
+            }
+            case GLFW_KEY_5: {
+                toonLightingSpecular = !toonLightingSpecular;
+                if (toonLightingSpecular)
+                    toonLightingDiffuse = true;
+                break;
+            }
+            case GLFW_KEY_6: {
+                toonxLighting = !toonxLighting;
+                break;
+            }
+            case GLFW_KEY_7: {
+                std::cout << "Number keys from 7 on not used." << std::endl;
+                return;
+            }
+            case GLFW_KEY_M: {
+                interfaceLightPlacement = static_cast<LightPlacementValue>(
+                        (static_cast<int>(interfaceLightPlacement) + 1) % 3);
+                break;
+            }
+            case GLFW_KEY_L: {
+                if (shiftPressed)
+                    lights.push_back(Light{trackball.position(), glm::vec3(1)});
+                else
+                    lights[selectedLight].position = trackball.position();
+                return;
+            }
+            case GLFW_KEY_MINUS: {
+                if (selectedLight == 0)
+                    selectedLight = lights.size() - 1;
+                else
+                    --selectedLight;
+                return;
+            }
+            case GLFW_KEY_EQUAL: {
+                if (shiftPressed) // '+' pressed (unless you use a weird keyboard layout).
+                    selectedLight = (selectedLight + 1) % lights.size();
+                return;
+            }
+            case GLFW_KEY_N: {
+                lights.clear();
+                lights.push_back(Light{glm::vec3(0, 0, 3), glm::vec3(1)});
+                selectedLight = 0;
+                return;
+            }
+            case GLFW_KEY_SPACE: {
+                const auto optWorldPoint = getWorldPositionOfPixel(trackball, window.getCursorPixel());
+                if (optWorldPoint) {
+                    //std::cout << "World point: (" << optWorldPoint->x << ", " << optWorldPoint->y << ", " << optWorldPoint->z << ")" << std::endl;
+                    //lights[selectedLight].position = worldPoint;
+                    const size_t selectedVertexIdx = getClosestVertexIndex(mesh, *optWorldPoint);
+                    if (selectedVertexIdx != 0xFFFFFFFF) {
+                        const Vertex &selectedVertex = mesh.vertices[selectedVertexIdx];
+                        userInteraction(trackball.position(), selectedVertex.position, selectedVertex.normal);
+                    }
                 }
+                return;
             }
-            return;
-        }
 
-        case GLFW_KEY_T: {
-            if (shiftPressed)
-                shadingData.toonSpecularThreshold += 0.001f;
-            else
-                shadingData.toonSpecularThreshold -= 0.001f;
-            std::cout << "ToonSpecular: " << shadingData.toonSpecularThreshold << std::endl;
-            return;
-        }
-        case GLFW_KEY_D: {
-            if (shiftPressed) {
-                ++shadingData.toonDiscretize;
-            } else {
-                if (--shadingData.toonDiscretize < 1)
-                    shadingData.toonDiscretize = 1;
+            case GLFW_KEY_T: {
+                if (shiftPressed)
+                    shadingData.toonSpecularThreshold += 0.001f;
+                else
+                    shadingData.toonSpecularThreshold -= 0.001f;
+                std::cout << "ToonSpecular: " << shadingData.toonSpecularThreshold << std::endl;
+                return;
             }
-            std::cout << "Toon Discretization levels: " << shadingData.toonDiscretize << std::endl;
-            return;
-        }
-        case GLFW_KEY_R: {
-            if (shiftPressed) {
-                // Decrease diffuse Kd coeffcient in the red channel by 0.1
-            } else {
-                // Increase diffuse Kd coeffcient in the red channel by 0.1
+            case GLFW_KEY_D: {
+                if (shiftPressed) {
+                    ++shadingData.toonDiscretize;
+                } else {
+                    if (--shadingData.toonDiscretize < 1)
+                        shadingData.toonDiscretize = 1;
+                }
+                std::cout << "Toon Discretization levels: " << shadingData.toonDiscretize << std::endl;
+                return;
             }
-            return;
-        }
-        case GLFW_KEY_G: {
-            // Same for green.
-            return;
-        }
-        case GLFW_KEY_B: {
-            // Same for blue.
-            return;
-        }
-        default:
-            return;
+            case GLFW_KEY_R: {
+                if (shiftPressed) {
+                    // Decrease diffuse Kd coeffcient in the red channel by 0.1
+                } else {
+                    // Increase diffuse Kd coeffcient in the red channel by 0.1
+                }
+                return;
+            }
+            case GLFW_KEY_G: {
+                // Same for green.
+                return;
+            }
+            case GLFW_KEY_B: {
+                // Same for blue.
+                return;
+            }
+            default:
+                return;
         };
 
         if (!toonLightingDiffuse && !toonxLighting) {
@@ -268,29 +274,37 @@ int main(int argc, char** argv)
         }
 
         switch (interfaceLightPlacement) {
-        case LightPlacementValue::Sphere: {
-            std::cout << "Interaction: LightPlacementValue::Sphere" << std::endl;
-            break;
-        }
-        case LightPlacementValue::Shadow: {
-            std::cout << "Interaction: LightPlacementValue::Shadow" << std::endl;
-            break;
-        }
-        case LightPlacementValue::Specular: {
-            std::cout << "Interaction: LightPlacementValue::Specular" << std::endl;
-            break;
-        }
+            case LightPlacementValue::Sphere: {
+                std::cout << "Interaction: LightPlacementValue::Sphere" << std::endl;
+                break;
+            }
+            case LightPlacementValue::Shadow: {
+                std::cout << "Interaction: LightPlacementValue::Shadow" << std::endl;
+                break;
+            }
+            case LightPlacementValue::Specular: {
+                std::cout << "Interaction: LightPlacementValue::Specular" << std::endl;
+                break;
+            }
         };
     });
 
-    const Shader lightShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/light_vertex.glsl").addStage(GL_FRAGMENT_SHADER, "shaders/light_frag.glsl").build();
-    const Shader debugShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, "shaders/debug_frag.glsl").build();
-    const Shader lambertShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, "shaders/lambert_frag.glsl").build();
-    const Shader phongShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, "shaders/phong_frag.glsl").build();
-    const Shader blinnPhongShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, "shaders/blinn_phong_frag.glsl").build();
-    const Shader toonDiffuseShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, "shaders/toon_diffuse_frag.glsl").build();
-    const Shader toonSpecularShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, "shaders/toon_specular_frag.glsl").build();
-    const Shader xToonShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, "shaders/xtoon_frag.glsl").build();
+    const Shader lightShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/light_vertex.glsl").addStage(
+            GL_FRAGMENT_SHADER, "shaders/light_frag.glsl").build();
+    const Shader debugShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl").addStage(
+            GL_FRAGMENT_SHADER, "shaders/debug_frag.glsl").build();
+    const Shader lambertShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl").addStage(
+            GL_FRAGMENT_SHADER, "shaders/lambert_frag.glsl").build();
+    const Shader phongShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl").addStage(
+            GL_FRAGMENT_SHADER, "shaders/phong_frag.glsl").build();
+    const Shader blinnPhongShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl").addStage(
+            GL_FRAGMENT_SHADER, "shaders/blinn_phong_frag.glsl").build();
+    const Shader toonDiffuseShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl").addStage(
+            GL_FRAGMENT_SHADER, "shaders/toon_diffuse_frag.glsl").build();
+    const Shader toonSpecularShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl").addStage(
+            GL_FRAGMENT_SHADER, "shaders/toon_specular_frag.glsl").build();
+    const Shader xToonShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl").addStage(
+            GL_FRAGMENT_SHADER, "shaders/xtoon_frag.glsl").build();
 
     // Create Vertex Buffer Object and Index Buffer Objects.
     GLuint vbo;
@@ -299,7 +313,9 @@ int main(int argc, char** argv)
 
     GLuint ibo;
     glCreateBuffers(1, &ibo);
-    glNamedBufferStorage(ibo, static_cast<GLsizeiptr>(mesh.triangles.size() * sizeof(decltype(Mesh::triangles)::value_type)), mesh.triangles.data(), 0);
+    glNamedBufferStorage(ibo,
+                         static_cast<GLsizeiptr>(mesh.triangles.size() * sizeof(decltype(Mesh::triangles)::value_type)),
+                         mesh.triangles.data(), 0);
 
     // Bind vertex data to shader inputs using their index (location).
     // These bindings are stored in the Vertex Array Object.
@@ -319,7 +335,7 @@ int main(int argc, char** argv)
 
     // Load image from disk to CPU memory.
     int width, height, sourceNumChannels; // Number of channels in source image. pixels will always be the requested number of channels (3).
-    stbi_uc* pixels = stbi_load("resources/toon_map.png", &width, &height, &sourceNumChannels, STBI_rgb);
+    stbi_uc *pixels = stbi_load("resources/toon_map.png", &width, &height, &sourceNumChannels, STBI_rgb);
 
     // Create a texture on the GPU with 3 channels with 8 bits each.
     GLuint texToon;
@@ -353,7 +369,7 @@ int main(int argc, char** argv)
 
         // Set model/view/projection matrix.
         const glm::vec3 cameraPos = trackball.position();
-        const glm::mat4 model { 1.0f };
+        const glm::mat4 model{1.0f};
         const glm::mat4 view = trackball.viewMatrix();
         const glm::mat4 projection = trackball.projectionMatrix();
         const glm::mat4 mvp = projection * view * model;
@@ -387,7 +403,7 @@ int main(int argc, char** argv)
             glEnable(GL_BLEND); // Enable blending.
             glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Additive blending.
 
-            for (const Light& light : lights) {
+            for (const Light &light: lights) {
                 renderedSomething = false;
                 if (!renderedSomething) {
                     if (toonxLighting) {
@@ -450,12 +466,12 @@ int main(int argc, char** argv)
                         else
                             blinnPhongShader.bind();
 
-                            // === SET YOUR PHONG/BLINN PHONG UNIFORMS HERE ===
-                            // Values that you may want to pass to the shader are stored in light, shadingData and cameraPos.
-                            glUniform3fv(1, 1, glm::value_ptr(shadingData.ks));
-                            glUniform3fv(2, 1, glm::value_ptr(cameraPos));
-                            glUniform3fv(3, 1, glm::value_ptr(light.position));
-                            glUniform1f(4, shadingData.shininess);
+                        // === SET YOUR PHONG/BLINN PHONG UNIFORMS HERE ===
+                        // Values that you may want to pass to the shader are stored in light, shadingData and cameraPos.
+                        glUniform3fv(1, 1, glm::value_ptr(shadingData.ks));
+                        glUniform3fv(2, 1, glm::value_ptr(cameraPos));
+                        glUniform3fv(3, 1, glm::value_ptr(light.position));
+                        glUniform1f(4, shadingData.shininess);
 
                         render();
                     }
@@ -477,14 +493,14 @@ int main(int argc, char** argv)
         lightShader.bind();
         {
             const glm::vec4 screenPos = mvp * glm::vec4(lights[selectedLight].position, 1.0f);
-            const glm::vec3 color { 1, 1, 0 };
+            const glm::vec3 color{1, 1, 0};
 
             glPointSize(40.0f);
             glUniform4fv(0, 1, glm::value_ptr(screenPos));
             glUniform3fv(1, 1, glm::value_ptr(color));
             glDrawArrays(GL_POINTS, 0, 1);
         }
-        for (const Light& light : lights) {
+        for (const Light &light: lights) {
             const glm::vec4 screenPos = mvp * glm::vec4(light.position, 1.0f);
             //const glm::vec3 color { 1, 0, 0 };
 
@@ -509,38 +525,35 @@ int main(int argc, char** argv)
 
 //User interaction - when the user chooses a vertex, you receive its position, normal, its index
 //you can use it to NOW modify all global variables, such as the light position, or change material properties etc.
-static void userInteraction(const glm::vec3& cameraPos, const glm::vec3& selectedPos, const glm::vec3& selectedNormal)
-{
+static void userInteraction(const glm::vec3 &cameraPos, const glm::vec3 &selectedPos, const glm::vec3 &selectedNormal) {
     switch (interfaceLightPlacement) {
-    case LightPlacementValue::Sphere: {
-        lights[selectedLight].position = userInteractionSphere(selectedPos, cameraPos);
-        break;
-    }
-    case LightPlacementValue::Shadow: {
-        lights[selectedLight].position = userInteractionShadow(
-            selectedPos, selectedNormal, lights[selectedLight].position);
-        break;
-    }
-    case LightPlacementValue::Specular: {
-        lights[selectedLight].position = userInteractionSpecular(
-            selectedPos, selectedNormal, lights[selectedLight].position, cameraPos);
-        break;
-    }
+        case LightPlacementValue::Sphere: {
+            lights[selectedLight].position = userInteractionSphere(selectedPos, cameraPos);
+            break;
+        }
+        case LightPlacementValue::Shadow: {
+            lights[selectedLight].position = userInteractionShadow(
+                    selectedPos, selectedNormal, lights[selectedLight].position);
+            break;
+        }
+        case LightPlacementValue::Specular: {
+            lights[selectedLight].position = userInteractionSpecular(
+                    selectedPos, selectedNormal, lights[selectedLight].position, cameraPos);
+            break;
+        }
     }
 }
 
-static size_t getClosestVertexIndex(const Mesh& mesh, const glm::vec3& pos)
-{
+static size_t getClosestVertexIndex(const Mesh &mesh, const glm::vec3 &pos) {
     const auto iter = std::min_element(
-        std::begin(mesh.vertices), std::end(mesh.vertices),
-        [&](const Vertex& lhs, const Vertex& rhs) {
-            return glm::length(lhs.position - pos) < glm::length(rhs.position - pos);
-        });
+            std::begin(mesh.vertices), std::end(mesh.vertices),
+            [&](const Vertex &lhs, const Vertex &rhs) {
+                return glm::length(lhs.position - pos) < glm::length(rhs.position - pos);
+            });
     return std::distance(std::begin(mesh.vertices), iter);
 }
 
-static std::optional<glm::vec3> getWorldPositionOfPixel(const Trackball& trackball, const glm::vec2& pixel)
-{
+static std::optional<glm::vec3> getWorldPositionOfPixel(const Trackball &trackball, const glm::vec2 &pixel) {
     float depth;
     glReadPixels(static_cast<int>(pixel.x), static_cast<int>(pixel.y), 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
 
@@ -555,18 +568,17 @@ static std::optional<glm::vec3> getWorldPositionOfPixel(const Trackball& trackba
     }
 
     // Coordinates convert from pixel space to OpenGL screen space (range from -1 to +1)
-    const glm::vec3 win { pixel, depth };
+    const glm::vec3 win{pixel, depth};
 
     // View matrix
     const glm::mat4 view = trackball.viewMatrix();
     const glm::mat4 projection = trackball.projectionMatrix();
 
-    const glm::vec4 viewport { 0, 0, WIDTH, HEIGHT };
+    const glm::vec4 viewport{0, 0, WIDTH, HEIGHT};
     return glm::unProject(win, view, projection, viewport);
 }
 
-static void printHelp()
-{
+static void printHelp() {
     Trackball::printHelp();
     std::cout << std::endl;
     std::cout << "Program Usage:" << std::endl;
